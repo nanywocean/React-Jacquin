@@ -6,12 +6,15 @@ import Card from '../../components/card/Card';
 import { useEffect, useState } from 'react';
 import type { Produto } from '../../types/Produto';
 import produtoService from '../../services/produtoService';
+import { useSearchParams } from 'react-router-dom';
 
 function ListaProdutos() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(true);
-
+  const [parametros] = useSearchParams();
+  const busca = (parametros.get('q') ?? '').toLocaleLowerCase('pt-BR');
+  const categoria = Number (parametros.get('categoria'));
   useEffect(() => {
     // Promise.call
     produtoService.listar()
@@ -19,6 +22,14 @@ function ListaProdutos() {
       .catch(() => setErro("Não foi possível carregar os produtos"))
       .finally(() => setCarregando(false))
   }, [])
+
+  const visiveis = produtos.filter(produto => produto.ativo &&
+    (!categoria || produto.categoriaIds.includes(categoria)) &&
+    (!busca || `${produto.nome} ${produto.descricaoCurta}`.toLocaleLowerCase
+      ('pt-BR').includes(busca))
+  )
+
+
 
   return (
     <>
@@ -33,10 +44,10 @@ function ListaProdutos() {
           {carregando && <p>Carregando produtos</p>}
           {!carregando && !erro && produtos.length === 0 && <p>Nenhum produto encontrado.</p>}
           <div className="prod_cards">
-            {produtos.map(produto => {
+            {visiveis.map(produto => {
               return <Card
-               id={produto.id}
-              key={produto.id}
+                id={produto.id}
+                key={produto.id}
                 imgProdutos={`http://localhost:3000${produto.imagem}`}
                 nome={produto.nome}
                 descricao={produto.descricaoCurta}
